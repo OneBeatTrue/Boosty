@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - INTERNAL_PORT=${INTERNAL_PORT}
+      - EXTERNAL_PORT=${EXTERNAL_PORT}
+      - MIGRATION_VERSION=1.2.0
+    volumes:
+      - ./start.sh:/docker-entrypoint-initdb.d/start.sh
+      - ./migrations:/app/migrations
+      - ./users.txt:/app/users.txt
+    ports:
+      - "${INTERNAL_PORT}:${EXTERNAL_PORT}"
+    restart: unless-stopped
+
+#  migration:
+#    image: python:3.9
+#    command: sh -c "pip install -r /app/requirements.txt && python /app/start.py"
+#    volumes:
+#      - ./requirements.txt:/app/requirements.txt
+#      - ./start.py:/app/start.py
+#      - ./migrations:/app/migrations
+#    depends_on:
+#      - postgres
+#    environment:
+#      - POSTGRES_USER=${POSTGRES_USER}
+#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+#      - POSTGRES_DB=${POSTGRES_DB}
+#      - POSTGRES_HOST=${POSTGRES_HOST}
+#      - EXTERNAL_PORT=${EXTERNAL_PORT}
+#      - MIGRATION_VERSION=1.2.0
+
+  generation:
+    image: python:3.9
+    command: sh -c "pip install -r /app/requirements.txt && python /app/datageneration.py"
+    volumes:
+      - ./requirements.txt:/app/requirements.txt
+      - ./generation/:/app/generation
+      - ./datageneration.py:/app/datageneration.py
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - EXTERNAL_PORT=${EXTERNAL_PORT}
+      - AMOUNT=1000000

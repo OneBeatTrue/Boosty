@@ -1,0 +1,16 @@
+drop table if exists users CASCADE;
+drop table if exists withdrawal_systems CASCADE;
+drop table if exists creators CASCADE;
+drop table if exists withdrawals CASCADE;
+drop table if exists links CASCADE;
+drop table if exists currencies CASCADE;
+drop table if exists bank_types CASCADE;
+drop table if exists billings CASCADE;
+drop table if exists followings CASCADE;
+drop table if exists subscription_levels CASCADE;
+drop table if exists subscriptions CASCADE;
+drop table if exists posts CASCADE;
+drop table if exists tags CASCADE;
+drop table if exists attachment_types CASCADE;
+drop table if exists attachments CASCADE;
+drop table if exists comments CASCADE;
