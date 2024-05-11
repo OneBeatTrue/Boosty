@@ -30,9 +30,11 @@ def main():
                 user=os.environ.get("POSTGRES_USER"),
                 password=os.environ.get("POSTGRES_PASSWORD"),
                 host=os.environ.get("POSTGRES_HOST"),
-                port=os.environ.get("EXTERNAL_PORT")
+                port=os.environ.get("PORT")
             )
             print("Successfully connected to the database.")
+
+            curs = conn.cursor()
             break
         except psycopg2.OperationalError as e:
             print(f"Attempt {attempt}: Connection failed. Error: {e}")
@@ -41,6 +43,19 @@ def main():
             else:
                 print("All attempts failed. Exiting.")
                 exit(1)
+
+    curs.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+    tables = curs.fetchall()
+    for table in tables:
+        table_name = table[0]
+        curs.execute(f"SELECT COUNT(*) FROM {table_name};")
+        count = curs.fetchone()[0]
+        if count != 0:
+            print("Database filled. Data generation not needed.")
+            curs.close()
+            exit(0)
+
+    curs.close()
 
     print("Generation started")
     users.generate_users(conn, n)

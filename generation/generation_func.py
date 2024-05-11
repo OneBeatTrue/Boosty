@@ -40,7 +40,7 @@ def generate_card_number():
 
 
 def generate_date():
-    return date(random.randint(2022, 2025), random.randint(1, 12), random.randint(1, 28))
+    return date(random.randint(2015, 2024), random.randint(1, 12), random.randint(1, 28))
 
 
 def generate_cvv():
@@ -56,7 +56,7 @@ def generate_money():
 
 
 def generate_datetime():
-    start_year = 2020
+    start_year = 2015
     end_year = 2024
     start_date = datetime.datetime(start_year, 1, 1)
     end_date = datetime.datetime(end_year, 12, 31)
@@ -65,9 +65,15 @@ def generate_datetime():
     random_seconds = random.randint(0, 24 * 60 * 60 - 1)
     return start_date + datetime.timedelta(days=random_days, seconds=random_seconds)
 
+
 def generate_text():
     length = random.randint(1, 10)
     return ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation + ' ', k=length))
+
+
+def generate_tag():
+    tags = ["#video", "#photo", "#gif", "#music", "#text"]
+    return random.choice(tags)
 
 # class Generator:
 #     def __init__(self, connection):

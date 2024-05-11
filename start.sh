@@ -11,10 +11,16 @@ execute_migration() {
     fi
 }
 
+tables_count=$(psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';")
+if [ $tables_count -gt 0 ]; then
+    echo "Database filled. Migration not needed."
+    exit 0
+fi
+
 MIGRATION_VERSION=${MIGRATION_VERSION:-latest}
 
-clear_sql="/app/migrations/clear.sql"
-execute_migration "$clear_sql"
+#clear_sql="/app/migrations/clear.sql"
+#execute_migration "$clear_sql"
 
 for migration_file in $(ls /app/migrations/migrate_*.sql | sort -V); do
     version=$(basename "$migration_file" | sed 's/^migrate_//' | sed 's/\.sql$//')
