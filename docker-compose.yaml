@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:15.6
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -10,7 +10,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - INTERNAL_PORT=${INTERNAL_PORT}
       - EXTERNAL_PORT=${EXTERNAL_PORT}
-      - MIGRATION_VERSION=1.2.0
+      - MIGRATION_VERSION=1.2.1
     volumes:
       - ./start.sh:/docker-entrypoint-initdb.d/start.sh
       - ./migrations:/app/migrations
@@ -18,23 +18,6 @@ services:
     ports:
       - "${EXTERNAL_PORT}:${INTERNAL_PORT}"
     restart: unless-stopped
-
-  generation:
-    image: postgres:latest
-    command: sh -c "pip install -r /app/requirements.txt && python /app/datageneration.py"
-    volumes:
-      - ./requirements.txt:/app/requirements.txt
-      - ./generation/:/app/generation
-      - ./datageneration.py:/app/datageneration.py
-    depends_on:
-      - postgres
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - PORT=${INTERNAL_PORT}
-      - AMOUNT=1000000
 
   indexing:
     image: python:3.9
@@ -53,31 +36,31 @@ services:
       - PORT=${INTERNAL_PORT}
       - FILE=create_indexes.sql
 
-  partition:
+  generation:
     image: python:3.9
-    command: sh -c "pip install -r /app/requirements.txt && python /app/runner.py"
+    command: sh -c "pip install -r /app/requirements.txt && python /app/datageneration.py"
     volumes:
       - ./requirements.txt:/app/requirements.txt
-      - ./runner.py:/app/runner.py
-      - ./optimization/partition.sql:/app/partition.sql
+      - ./generation/:/app/generation
+      - ./datageneration.py:/app/datageneration.py
     depends_on:
-      - postgres
+      - indexing
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - PORT=${INTERNAL_PORT}
-      - FILE=partition.sql
+      - AMOUNT=10
 
   backups:
-    image: postgres:latest
+    image: postgres:15.6
     command: sh -c "/app/backup.sh"
     volumes:
       - ./backups:/app/backups
       - ./backup.sh:/app/backup.sh
     depends_on:
-      - postgres
+      - generation
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -88,20 +71,18 @@ services:
       - M=${M}
       - BACKUP_DIR=${BACKUP_DIR}
 
-#  backups:
-#    image: python:3.9
-#    command: sh -c "apt-get update && apt-get upgrade -y && apt-get install -y postgresql-client && echo "QWERTQWERQWERTQWER" && find / -name pg_dump && pg_dump --version && python /app/backup.py"
-#    volumes:
-#      - ./backups:/app/backups
-#      - ./backup.py:/app/backup.py
-#    depends_on:
-#      - postgres
-#    environment:
-#      - POSTGRES_USER=${POSTGRES_USER}
-#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-#      - POSTGRES_DB=${POSTGRES_DB}
-#      - POSTGRES_HOST=${POSTGRES_HOST}
-#      - PORT=${INTERNAL_PORT}
-#      - N=${N}
-#      - M=${M}
-#      - BACKUP_DIR=${BACKUP_DIR}
+  analyzer:
+    image: python:3.9
+    command: sh -c "pip install -r /app/requirements.txt && python /app/analyzer.py"
+    volumes:
+      - ./requirements.txt:/app/requirements.txt
+      - ./QueryAnalyzer:/app
+    depends_on:
+      - backups
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - PORT=${INTERNAL_PORT}
+      - QUERY_TRIES=10

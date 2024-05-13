@@ -76,9 +76,10 @@ class QueryPerformanceAnalyzer:
 
     def write_results(self):
         number = 1
-        while os.path.exists(f"query_performance_results_{number}.txt"):
+        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"performance/query_performance_results_{number}.txt")
+        while os.path.exists(filename):
             number += 1
-        filename = f"query_performance_results_{number}.txt"
+            filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"performance/query_performance_results_{number}.txt")
         with open(filename, 'w') as file:
             for result in self.results:
                 file.write(f"query: {result['query']}\n")
@@ -88,16 +89,8 @@ class QueryPerformanceAnalyzer:
                 file.write(f"worst_time: {result['worst_time']}\n\n")
 
 
-def load_dotenv():
-    with open(".env") as f:
-        for line in f:
-            key, value = line.strip().split("=")
-            os.environ[key] = value
-
-
 if __name__ == "__main__":
-    load_dotenv()
-    queries_file = "queries.sql"
+    queries_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "queries.sql")
     query_tries = int(os.environ.get("QUERY_TRIES"))
 
     analyzer = QueryPerformanceAnalyzer(queries_file, query_tries)

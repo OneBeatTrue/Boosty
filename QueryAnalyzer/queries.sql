@@ -3,7 +3,7 @@ FROM creators AS c
 LEFT JOIN users AS u ON c.creator_id = u.user_id
 LEFT JOIN subscription_levels AS sl ON sl.creator_id = c.creator_id
 INNER JOIN subscriptions AS s ON s.sub_level_id = sl.sub_level_id
-LEFT JOIN followings_partitioned AS f ON f.creator_id = c.creator_id
+LEFT JOIN followings AS f ON f.creator_id = c.creator_id
 GROUP BY c.creator_id, u.name;
 
 SELECT *

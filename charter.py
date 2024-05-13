@@ -1,12 +1,13 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
 
-# Чтение файлов и создание DataFrame
+n = len(os.listdir("./QueryAnalyzer/performance"))
 dataframes = []
 for j in range(5):
     query_info = {}
-    for i in range(1, 6):
-        filename = f"query_performance_results_{i}.txt"
+    for i in range(1, n + 1):
+        filename = f"./QueryAnalyzer/performance/query_performance_results_{i}.txt"
         with open(filename, 'r') as file:
             lines = file.readlines()
             pos = j * 6

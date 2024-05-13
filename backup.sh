@@ -4,12 +4,29 @@ backup_database() {
     local backup_dir="$(dirname "$(realpath "$0")")/${BACKUP_DIR}"
     local timestamp=$(date +'%Y-%m-%d_%H-%M-%S')
     local backup_filename="${timestamp}_${POSTGRES_DB}.sql"
-    export PGPASSWORD="${POSTGRES_PASSWORD}"
-    local backup_command="pg_dump -U ${POSTGRES_USER} -d ${POSTGRES_DB} -p ${PORT} -h ${POSTGRES_HOST} -f $backup_dir/$backup_filename"
-    echo "Backing up database..."
-    $backup_command
-    echo "Backing up finished"
-    unset PGPASSWORD
+
+    local retries=3
+    local delay=5
+    local attempts=0
+    local success=false
+    until $success || [ $attempts -ge $retries ]; do
+        attempts=$((attempts + 1))
+        echo "Attempt $attempts to connect to the database..."
+        export PGPASSWORD="${POSTGRES_PASSWORD}"
+        pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -p "${PORT}" -h "${POSTGRES_HOST}" -f "$backup_dir/$backup_filename"
+        if [ $? -eq 0 ]; then
+            echo "Database backup successful"
+            success=true
+        else
+            echo "Database backup failed, retrying in $delay seconds..."
+            sleep "$delay"
+        fi
+        unset PGPASSWORD
+    done
+    if ! $success; then
+        echo "Failed to connect to the database after $retries attempts"
+        exit 1
+    fi
 }
 
 remove_old_backups() {
@@ -36,3 +53,5 @@ while true; do
     remove_old_backups
     sleep "${N}"h
 done
+
+}

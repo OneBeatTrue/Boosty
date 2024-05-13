@@ -46,7 +46,7 @@ class Runner:
 
 
 if __name__ == "__main__":
-    queries_file = os.environ.get("FILE")
+    queries_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.environ.get("FILE"))
     runner = Runner(queries_file)
     runner.load_queries()
     runner.run()
