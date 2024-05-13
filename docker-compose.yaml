@@ -35,3 +35,37 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - PORT=${INTERNAL_PORT}
       - AMOUNT=1000000
+
+  indexing:
+    image: python:3.9
+    command: sh -c "pip install -r /app/requirements.txt && python /app/runner.py"
+    volumes:
+      - ./requirements.txt:/app/requirements.txt
+      - ./runner.py:/app/runner.py
+      - ./optimization/create_indexes.sql:/app/create_indexes.sql
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - PORT=${INTERNAL_PORT}
+      - FILE=create_indexes.sql
+
+  partition:
+    image: python:3.9
+    command: sh -c "pip install -r /app/requirements.txt && python /app/runner.py"
+    volumes:
+      - ./requirements.txt:/app/requirements.txt
+      - ./runner.py:/app/runner.py
+      - ./optimization/partition.sql:/app/partition.sql
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - PORT=${INTERNAL_PORT}
+      - FILE=partition.sql

@@ -3,7 +3,7 @@ FROM creators AS c
 LEFT JOIN users AS u ON c.creator_id = u.user_id
 LEFT JOIN subscription_levels AS sl ON sl.creator_id = c.creator_id
 INNER JOIN subscriptions AS s ON s.sub_level_id = sl.sub_level_id
-LEFT JOIN followings AS f ON f.creator_id = c.creator_id
+LEFT JOIN followings_partitioned AS f ON f.creator_id = c.creator_id
 GROUP BY c.creator_id, u.name;
 
 SELECT *
@@ -21,8 +21,8 @@ GROUP BY c.creator_id, u.name;
 SELECT *
 FROM subscription_levels AS sl
 INNER JOIN subscriptions AS s ON s.sub_level_id = sl.sub_level_id
-WHERE sl.creator_id = 4;
+WHERE sl.creator_id = 10;
 
 SELECT *
 FROM comments AS c
-WHERE c.recipient_post_id = 2;
+WHERE c.recipient_post_id = 2070477;

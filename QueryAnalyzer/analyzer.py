@@ -41,9 +41,10 @@ class QueryPerformanceAnalyzer:
             if query == "":
                 continue
             query = ' '.join(query.split('\n'))
-            total_cost = 0
-            best_cost = float('inf')
-            worst_cost = 0
+            total_time = 0
+            best_time = float('inf')
+            worst_time = 0
+            cost = 0
             for i in range(self.query_tries):
                 start_time = time.time()
 
@@ -51,21 +52,23 @@ class QueryPerformanceAnalyzer:
                 result = cursor.fetchall()
 
                 cost = float(next((x.split('=')[1].split()[0].split('..')[1] for x in result[0] if 'cost=' in x), '0'))
-                total_cost += cost
-                if cost < best_cost:
-                    best_cost = cost
-                if cost > worst_cost:
-                    worst_cost = cost
-
                 elapsed_time = time.time() - start_time
+                total_time += elapsed_time
+                if elapsed_time < best_time:
+                    best_time = elapsed_time
+                if elapsed_time > worst_time:
+                    worst_time = elapsed_time
+
+
                 print(f"Query: {query.strip()}, Attempt: {i + 1}, Cost: {cost}, Elapsed Time: {elapsed_time} seconds")
 
-            avg_cost = total_cost / self.query_tries
+            avg_time = total_time / self.query_tries
             self.results.append({
                 'query': query.strip(),
-                'best_cost': best_cost,
-                'avg_cost': avg_cost,
-                'worst_cost': worst_cost
+                'cost': cost,
+                'best_time': best_time,
+                'avg_time': avg_time,
+                'worst_time': worst_time
             })
 
         cursor.close()
@@ -79,9 +82,10 @@ class QueryPerformanceAnalyzer:
         with open(filename, 'w') as file:
             for result in self.results:
                 file.write(f"query: {result['query']}\n")
-                file.write(f"best_cost: {result['best_cost']}\n")
-                file.write(f"avg_cost: {result['avg_cost']}\n")
-                file.write(f"worst_cost: {result['worst_cost']}\n\n")
+                file.write(f"cost: {result['cost']}\n")
+                file.write(f"best_time: {result['best_time']}\n")
+                file.write(f"avg_time: {result['avg_time']}\n")
+                file.write(f"worst_time: {result['worst_time']}\n\n")
 
 
 def load_dotenv():

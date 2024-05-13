@@ -1,30 +1,30 @@
 query: SELECT c.creator_id, u.name, COUNT(DISTINCT s.sub_id) AS subscribers_amount, COUNT(DISTINCT f.user_id) AS subscribers_amount FROM creators AS c LEFT JOIN users AS u ON c.creator_id = u.user_id LEFT JOIN subscription_levels AS sl ON sl.creator_id = c.creator_id INNER JOIN subscriptions AS s ON s.sub_level_id = sl.sub_level_id LEFT JOIN followings AS f ON f.creator_id = c.creator_id GROUP BY c.creator_id, u.name
-cost: 2084938.23
-best_time: 15.953501462936401
-avg_time: 19.197611260414124
-worst_time: 23.684791326522827
+cost: 1636380.12
+best_time: 19.43742871284485
+avg_time: 23.731039237976074
+worst_time: 34.82844066619873
 
 query: SELECT * FROM posts AS p LEFT JOIN public.tags AS t ON p.post_id = t.post_id WHERE t.tag = '#music'
-cost: 115725.72
-best_time: 0.9787631034851074
-avg_time: 1.368882966041565
-worst_time: 1.8243882656097412
+cost: 115726.57
+best_time: 0.7998857498168945
+avg_time: 1.1385213136672974
+worst_time: 3.3635082244873047
 
 query: SELECT c.creator_id, u.name, SUM(w.amount) AS total_output FROM creators AS c LEFT JOIN users AS u ON c.creator_id = u.user_id LEFT JOIN withdrawals AS w ON c.creator_id = w.creator_id WHERE w.datetime >= CURRENT_TIMESTAMP - INTERVAL '5 years' GROUP BY c.creator_id, u.name
-cost: 323764.45
-best_time: 2.986720085144043
-avg_time: 3.771159601211548
-worst_time: 5.097527027130127
+cost: 239741.35
+best_time: 2.089431047439575
+avg_time: 2.416735816001892
+worst_time: 2.942369222640991
 
 query: SELECT * FROM subscription_levels AS sl INNER JOIN subscriptions AS s ON s.sub_level_id = sl.sub_level_id WHERE sl.creator_id = 10
-cost: 65148.35
-best_time: 0.22876286506652832
-avg_time: 0.30508787631988527
-worst_time: 0.3433349132537842
+cost: 74.55
+best_time: 0.0009982585906982422
+avg_time: 0.0015998363494873046
+worst_time: 0.0029952526092529297
 
 query: SELECT * FROM comments AS c WHERE c.recipient_post_id = 2070477
-cost: 27737.07
-best_time: 0.10838103294372559
-avg_time: 0.12534584999084472
-worst_time: 0.1608121395111084
+cost: 20.5
+best_time: 0.0
+avg_time: 0.0013000249862670898
+worst_time: 0.003998756408691406
 
