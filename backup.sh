@@ -5,7 +5,7 @@ backup_database() {
     local timestamp=$(date +'%Y-%m-%d_%H-%M-%S')
     local backup_filename="${timestamp}_${POSTGRES_DB}.sql"
 
-    local retries=3
+    local retries=10
     local delay=5
     local attempts=0
     local success=false

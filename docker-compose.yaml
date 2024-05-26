@@ -1,82 +1,156 @@
 version: '3.9'
 
+networks:
+  boosty_network:
+
 services:
-  postgres:
+  etcd1: &etcd
+    image: ${PATRONI_TEST_IMAGE:-patroni}
+    networks: [ boosty_network ]
+    environment:
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_CLUSTER: etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      ETCD_INITIAL_CLUSTER_STATE: new
+      ETCD_INITIAL_CLUSTER_TOKEN: tutorial
+      ETCD_UNSUPPORTED_ARCH: arm64
+    hostname: etcd1
+    command: etcd --name etcd1 --initial-advertise-peer-urls http://etcd1:2380
+
+  etcd2:
+    <<: *etcd
+    hostname: etcd2
+    command: etcd --name etcd2 --initial-advertise-peer-urls http://etcd2:2380
+
+  etcd3:
+    <<: *etcd
+    hostname: etcd3
+    command: etcd --name etcd3 --initial-advertise-peer-urls http://etcd3:2380
+
+  haproxy:
+    image: ${PATRONI_TEST_IMAGE:-patroni}
+    networks: [ boosty_network ]
+    env_file: patroni/docker/patroni.env
+    hostname: haproxy
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    command: haproxy
+    environment: &haproxy_env
+      ETCDCTL_ENDPOINTS: http://etcd1:2379,http://etcd2:2379,http://etcd3:2379
+      PATRONI_ETCD3_HOSTS: "'etcd1:2379','etcd2:2379','etcd3:2379'"
+      PATRONI_SCOPE: boosty_network
+
+  patroni1:
+    image: ${PATRONI_TEST_IMAGE:-patroni}
+    networks: [ boosty_network ]
+    env_file: patroni/docker/patroni.env
+    hostname: patroni1
+    environment:
+      <<: *haproxy_env
+      PATRONI_NAME: patroni1
+
+  patroni2:
+    image: ${PATRONI_TEST_IMAGE:-patroni}
+    networks: [ boosty_network ]
+    env_file: patroni/docker/patroni.env
+    hostname: patroni2
+    environment:
+      <<: *haproxy_env
+      PATRONI_NAME: patroni2
+
+  patroni3:
+    image: ${PATRONI_TEST_IMAGE:-patroni}
+    networks: [ boosty_network ]
+    env_file: patroni/docker/patroni.env
+    environment:
+      <<: *haproxy_env
+      PATRONI_NAME: patroni3
+
+  migration:
     image: postgres:15.6
+    networks: [ boosty_network ]
+    command: sh -c "/app/1_start.sh && /app/2_roles.sh"
+    depends_on:
+      - haproxy
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - INTERNAL_PORT=${INTERNAL_PORT}
-      - EXTERNAL_PORT=${EXTERNAL_PORT}
+      - PORT=${PORT}
       - MIGRATION_VERSION=1.2.1
     volumes:
-      - ./start.sh:/docker-entrypoint-initdb.d/start.sh
+      - ./1_start.sh:/app/1_start.sh
+      - ./2_roles.sh:/app/2_roles.sh
       - ./migrations:/app/migrations
       - ./users.txt:/app/users.txt
-    ports:
-      - "${EXTERNAL_PORT}:${INTERNAL_PORT}"
-    restart: unless-stopped
 
   indexing:
     image: python:3.9
+    networks: [ boosty_network ]
     command: sh -c "pip install -r /app/requirements.txt && python /app/runner.py"
     volumes:
       - ./requirements.txt:/app/requirements.txt
       - ./runner.py:/app/runner.py
       - ./optimization/create_indexes.sql:/app/create_indexes.sql
     depends_on:
-      - postgres
+      migration:
+        condition: service_completed_successfully
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - PORT=${INTERNAL_PORT}
+      - PORT=${PORT}
       - FILE=create_indexes.sql
 
   generation:
     image: python:3.9
+    networks: [ boosty_network ]
     command: sh -c "pip install -r /app/requirements.txt && python /app/datageneration.py"
     volumes:
       - ./requirements.txt:/app/requirements.txt
       - ./generation/:/app/generation
       - ./datageneration.py:/app/datageneration.py
     depends_on:
-      - indexing
+      indexing:
+        condition: service_completed_successfully
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - PORT=${INTERNAL_PORT}
+      - PORT=${PORT}
       - AMOUNT=10
 
   backups:
-    image: postgres:15.6
+    image: postgres:16.3
+    networks: [ boosty_network ]
     command: sh -c "/app/backup.sh"
     volumes:
       - ./backups:/app/backups
       - ./backup.sh:/app/backup.sh
     depends_on:
-      - generation
+      generation:
+        condition: service_completed_successfully
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - PORT=${INTERNAL_PORT}
+      - PORT=${PORT}
       - N=${N}
       - M=${M}
       - BACKUP_DIR=${BACKUP_DIR}
 
   analyzer:
     image: python:3.9
+    networks: [ boosty_network ]
     command: sh -c "pip install -r /app/requirements.txt && python /app/analyzer.py"
     volumes:
       - ./requirements.txt:/app/requirements.txt
-      - ./QueryAnalyzer:/app
+      - ./query_analyzer:/app
     depends_on:
       - backups
     environment:
@@ -84,5 +158,5 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - PORT=${INTERNAL_PORT}
+      - PORT=${PORT}
       - QUERY_TRIES=10

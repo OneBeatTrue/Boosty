@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="boosty_db@localhost" uuid="94f33b04-b292-4f16-81c9-14723cc4205a">
+    <data-source source="LOCAL" name="postgres@localhost" uuid="fd959933-7e0c-4d7a-84cc-f2a5f2c78b62">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://localhost:5434/boosty_db</jdbc-url>
+      <jdbc-url>jdbc:postgresql://localhost:5000/postgres</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
