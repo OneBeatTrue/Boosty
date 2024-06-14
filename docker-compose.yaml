@@ -65,7 +65,70 @@ services:
     env_file: patroni/docker/patroni.env
     environment:
       <<: *haproxy_env
-      PATRONI_NAME: patroni3
+      PATRONI_NAME: patroni
+
+  pg_exporter:
+    image: wrouesnel/postgres_exporter
+    networks: [ boosty_network ]
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@haproxy:5000/${POSTGRES_DB}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - haproxy
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    networks: [ boosty_network ]
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude'
+      - '^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "9100:9100"
+    depends_on:
+      - haproxy
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    networks: [ boosty_network ]
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - haproxy
+
+  prometheus:
+    image: prom/prometheus:latest
+    networks: [ boosty_network ]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - pg_exporter
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    networks: [ boosty_network ]
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
 
   migration:
     image: postgres:15.6
@@ -122,7 +185,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
       - PORT=${PORT}
-      - AMOUNT=10
+      - AMOUNT=100
 
   backups:
     image: postgres:16.3

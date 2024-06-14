@@ -17,8 +17,18 @@ for j in range(5):
             worst_time = float(lines[pos + 4].split(":")[1].strip())
             query_info[i] = {'cost': cost, 'best_time': best_time, 'avg_time': avg_time, 'worst_time': worst_time}
     dataframes.append(pd.DataFrame(query_info).transpose())
-print(dataframes)
+
 for df in dataframes:
+    fig, ax = plt.subplots(figsize=(6, 2))
+    ax.axis('tight')
+    ax.axis('off')
+    table = ax.table(cellText=df.values, colLabels=df.columns, loc='center')
+    fig.dpi = 300
+    plt.show()
+
+for df in dataframes:
+    print(df.to_excel)
+
     fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 8))
 
     initial_best_time = df['best_time'].iloc[0]
