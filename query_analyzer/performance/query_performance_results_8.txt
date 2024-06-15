@@ -1,0 +1,30 @@
+query: SELECT c.creator_id, u.name, COUNT(DISTINCT s.sub_id) AS subscribers_amount, COUNT(DISTINCT f.user_id) AS subscribers_amount FROM creators AS c LEFT JOIN users AS u ON c.creator_id = u.user_id LEFT JOIN subscription_levels AS sl ON sl.creator_id = c.creator_id INNER JOIN subscriptions AS s ON s.sub_level_id = sl.sub_level_id LEFT JOIN followings AS f ON f.creator_id = c.creator_id GROUP BY c.creator_id, u.name
+cost: 12860.14
+best_time: 0.004407167434692383
+avg_time: 0.005415129661560059
+worst_time: 0.007926702499389648
+
+query: SELECT * FROM posts AS p LEFT JOIN public.tags AS t ON p.post_id = t.post_id WHERE t.tag = '#music'
+cost: 16.46
+best_time: 0.0005412101745605469
+avg_time: 0.0006751775741577149
+worst_time: 0.001300811767578125
+
+query: SELECT c.creator_id, u.name, SUM(w.amount) AS total_output FROM creators AS c LEFT JOIN users AS u ON c.creator_id = u.user_id LEFT JOIN withdrawals AS w ON c.creator_id = w.creator_id WHERE w.datetime >= CURRENT_TIMESTAMP - INTERVAL '5 years' GROUP BY c.creator_id, u.name
+cost: 63.11
+best_time: 0.0007441043853759766
+avg_time: 0.0009778976440429688
+worst_time: 0.0012676715850830078
+
+query: SELECT * FROM subscription_levels AS sl INNER JOIN subscriptions AS s ON s.sub_level_id = sl.sub_level_id WHERE sl.creator_id = 1000000
+cost: 37.89
+best_time: 0.0003733634948730469
+avg_time: 0.0004499673843383789
+worst_time: 0.0006372928619384766
+
+query: SELECT * FROM comments AS c WHERE c.recipient_post_id = 2070477
+cost: 21.0
+best_time: 0.0002751350402832031
+avg_time: 0.0003680706024169922
+worst_time: 0.0007300376892089844
+
